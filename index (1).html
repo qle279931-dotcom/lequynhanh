@@ -130,13 +130,13 @@ function lab(text,pos,cls){
   labs.push({e,pos});
 }
 const at=(i,f)=>paths[i].pts[Math.floor(paths[i].pts.length*f)];
-lab('HỐ ĐEN',new THREE.Vector3(0,CY+R_BH,0));
-lab('CHÂN TRỜI SỰ KIỆN',new THREE.Vector3(R_EH*.71,CY,R_EH*.71));
-lab('ĐỘ CONG KHÔNG–THỜI GIAN',new THREE.Vector3(-70*.71,GY(70),70*.71));
-lab('QUỸ ĐẠO ÁNH SÁNG',at(0,.12).clone().add(new THREE.Vector3(0,0,0)));
-lab('TIA SÁNG XA',at(0,.62),'far');
-lab('TIA SÁNG TRUNG BÌNH',at(1,.62),'mid');
-lab('TIA SÁNG GẦN',at(2,.68),'near');
+lab('',new THREE.Vector3(0,CY+R_BH,0));
+lab('',new THREE.Vector3(R_EH*.71,CY,R_EH*.71));
+lab('',new THREE.Vector3(-70*.71,GY(70),70*.71));
+lab('',at(0,.12).clone().add(new THREE.Vector3(0,0,0)));
+lab('',at(0,.62),'far');
+lab('',at(1,.62),'mid');
+lab('',at(2,.68),'near');
 
 /* Nút điều khiển */
 function tog(id,fn){const b=document.getElementById(id);b.onclick=()=>{const s=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',s);fn(s);};}
