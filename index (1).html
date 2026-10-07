@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BLACK HOLE 3D – Lê Quỳnh Anh</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05070d;--ink:#e8eef5;--mute:#8d9bb0;--amber:#ffb347;--line:#2a3550;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden}
+#app{position:relative;height:100%}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+header{position:absolute;left:16px;top:12px;right:16px;pointer-events:none}
+h1{margin:0;font-size:clamp(18px,3.2vw,28px);font-weight:700;letter-spacing:.02em}
+header p{margin:4px 0 0;font-size:13px;color:var(--mute);max-width:46ch}
+.au{color:var(--amber)!important;font-weight:600}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font-size:11px;font-weight:600;padding:3px 7px;border-radius:4px;background:rgba(5,7,13,.78);border:1px solid var(--line);pointer-events:none;transform:translate(-50%,-130%)}
+.lb::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:10px;background:var(--line)}
+.lb.far{color:#ffe08a}.lb.mid{color:#ffb347}.lb.near{color:#ff7a59}
+#bar{position:absolute;left:0;right:0;bottom:max(12px,env(safe-area-inset-bottom,0px));display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 12px}
+button{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:#101830;border:1px solid var(--line);border-radius:8px;padding:9px 14px;cursor:pointer;min-height:40px}
+button[aria-pressed=true]{background:var(--amber);color:#1a1000;border-color:var(--amber)}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#hint{position:absolute;right:16px;top:12px;font-size:12px;color:var(--mute);text-align:right;pointer-events:none}
+@media(max-width:600px){#hint{display:none}.lb{font-size:10px;padding:2px 5px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+  <header>
+    <h1>BLACK HOLE 3D</h1>
+    <p>Mô hình hố đen: lưới không–thời gian cong và ba đường đi của ánh sáng.</p>
+    <p class="au">Tác giả: Lê Quỳnh Anh</p>
+  </header>
+  <div id="hint">Kéo để xoay · Cuộn hoặc chụm hai ngón để thu phóng</div>
+  <div id="bar">
+    <button id="bLab" aria-pressed="true">Nhãn chú thích</button>
+    <button id="bRot" aria-pressed="true">Tự xoay</button>
+    <button id="bPh" aria-pressed="true">Hạt ánh sáng</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const app=document.getElementById('app'),cv=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x05070d);
+const cam=new THREE.PerspectiveCamera(42,1,1,2000);
+cam.position.set(250,210,300);
+const ctl=new THREE.OrbitControls(cam,cv);
+ctl.target.set(0,70,0);ctl.enableDamping=true;ctl.autoRotate=true;ctl.autoRotateSpeed=.8;
+ctl.minDistance=150;ctl.maxDistance=700;ctl.maxPolarAngle=Math.PI*0.52;
+
+scene.add(new THREE.AmbientLight(0xffffff,.55));
+const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(150,300,200);scene.add(dl);
+
+/* Đế 300 x 220 x 15 mm */
+const base=new THREE.Mesh(new THREE.BoxGeometry(300,15,220),new THREE.MeshStandardMaterial({color:0x1a2236,roughness:.7}));
+base.position.y=7.5;scene.add(base);
+
+/* Hàm độ cao của lưới: xa thì phẳng, gần hố đen thì hạ thấp */
+const TOP=145;
+const GY=r=>TOP-75*Math.exp(-Math.pow(r/55,2));
+const CY=85,R_BH=30,R_EH=42.5;
+
+/* Quả cầu hố đen ~60 mm */
+const bh=new THREE.Mesh(new THREE.SphereGeometry(R_BH,48,32),new THREE.MeshStandardMaterial({color:0x020204,roughness:.4,metalness:.3}));
+bh.position.y=CY;scene.add(bh);
+/* Thanh đỡ quả cầu */
+const rod=new THREE.Mesh(new THREE.CylinderGeometry(2,2,CY-15,12),new THREE.MeshStandardMaterial({color:0x3a4560}));
+rod.position.y=15+(CY-15)/2;scene.add(rod);
+
+/* Vòng chân trời sự kiện, đường kính ngoài ~90 mm */
+const ring=new THREE.Mesh(new THREE.TorusGeometry(R_EH,2.5,16,96),new THREE.MeshStandardMaterial({color:0xffb347,emissive:0xff8a1f,emissiveIntensity:.9}));
+ring.rotation.x=Math.PI/2;ring.position.y=CY;scene.add(ring);
+
+/* Lưới không–thời gian: các vòng tròn đồng tâm và các thanh hướng tâm */
+const gm=new THREE.LineBasicMaterial({color:0x6fa8c7});
+const GR=100,rings=[];
+for(let r=34;r<=GR;r+=11.2)rings.push(r);
+rings.forEach(r=>{
+  const pts=[];
+  for(let i=0;i<=128;i++){const a=i/128*Math.PI*2;pts.push(new THREE.Vector3(r*Math.cos(a),GY(r),r*Math.sin(a)));}
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gm));
+});
+for(let k=0;k<32;k++){
+  const a=k/32*Math.PI*2,pts=[];
+  for(let r=32;r<=GR;r+=2.5)pts.push(new THREE.Vector3(r*Math.cos(a),GY(r),r*Math.sin(a)));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gm));
+}
+/* 4 trụ đỡ lưới */
+[45,135,225,315].forEach(d=>{
+  const a=d*Math.PI/180,h=TOP-15;
+  const p=new THREE.Mesh(new THREE.CylinderGeometry(2,2,h,12),new THREE.MeshStandardMaterial({color:0x3a4560}));
+  p.position.set(GR*Math.cos(a),15+h/2,GR*Math.sin(a));scene.add(p);
+});
+
+/* Quỹ đạo ánh sáng: tia bay ngang qua, bị hố đen bẻ cong */
+function path(b,K){
+  let p=new THREE.Vector2(-110,b),v=new THREE.Vector2(1,0);const out=[];
+  for(let i=0;i<400;i++){
+    const r=p.length();
+    if(r<R_BH+5||Math.abs(p.x)>112||Math.abs(p.y)>112)break;
+    out.push(new THREE.Vector3(p.x,GY(Math.min(r,GR))+3,p.y));
+    const acc=p.clone().multiplyScalar(-K/Math.pow(r*r+400,1.5));
+    v.add(acc.multiplyScalar(1.2)).normalize();
+    p.add(v.clone().multiplyScalar(1.2));
+  }
+  return out;
+}
+const defs=[{b:82,K:12,c:0xffe08a,cls:'far'},{b:64,K:12,c:0xffb347,cls:'mid'},{b:50,K:12,c:0xff7a59,cls:'near'}];
+const paths=defs.map(d=>{
+  const pts=path(d.b,d.K);
+  const curve=new THREE.CatmullRomCurve3(pts);
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,160,1.1,6),new THREE.MeshBasicMaterial({color:d.c}));
+  scene.add(tube);
+  const ph=new THREE.Mesh(new THREE.SphereGeometry(3,12,12),new THREE.MeshBasicMaterial({color:0xffffff}));
+  scene.add(ph);
+  return {curve,ph,pts,def:d};
+});
+
+/* Nhãn chú thích */
+const labs=[];
+function lab(text,pos,cls){
+  const e=document.createElement('div');e.className='lb '+(cls||'');e.textContent=text;app.appendChild(e);
+  labs.push({e,pos});
+}
+const at=(i,f)=>paths[i].pts[Math.floor(paths[i].pts.length*f)];
+lab('HỐ ĐEN',new THREE.Vector3(0,CY+R_BH,0));
+lab('CHÂN TRỜI SỰ KIỆN',new THREE.Vector3(R_EH*.71,CY,R_EH*.71));
+lab('ĐỘ CONG KHÔNG–THỜI GIAN',new THREE.Vector3(-70*.71,GY(70),70*.71));
+lab('QUỸ ĐẠO ÁNH SÁNG',at(0,.12).clone().add(new THREE.Vector3(0,0,0)));
+lab('TIA SÁNG XA',at(0,.62),'far');
+lab('TIA SÁNG TRUNG BÌNH',at(1,.62),'mid');
+lab('TIA SÁNG GẦN',at(2,.68),'near');
+
+/* Nút điều khiển */
+function tog(id,fn){const b=document.getElementById(id);b.onclick=()=>{const s=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',s);fn(s);};}
+let showLab=true,showPh=true;
+tog('bLab',s=>{showLab=s;labs.forEach(l=>l.e.style.display=s?'':'none');});
+tog('bRot',s=>ctl.autoRotate=s);
+tog('bPh',s=>{showPh=s;paths.forEach(p=>p.ph.visible=s);});
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){ctl.autoRotate=false;document.getElementById('bRot').setAttribute('aria-pressed','false');}
+
+function resize(){
+  const w=app.clientWidth,h=app.clientHeight;
+  renderer.setSize(w,h,false);cam.aspect=w/h;
+  if(w<600){cam.position.setLength(Math.max(cam.position.length(),520));}
+  cam.updateProjectionMatrix();
+}
+addEventListener('resize',resize);resize();
+
+const v3=new THREE.Vector3(),clock=new THREE.Clock();
+function frame(){
+  requestAnimationFrame(frame);
+  const t=clock.getElapsedTime();
+  paths.forEach((p,i)=>{p.ph.position.copy(p.curve.getPoint(((t*(.12+i*.02))+i*.3)%1));});
+  ring.material.emissiveIntensity=.8+.2*Math.sin(t*2);
+  ctl.update();
+  renderer.render(scene,cam);
+  if(showLab){
+    const w=app.clientWidth,h=app.clientHeight;
+    labs.forEach(l=>{
+      v3.copy(l.pos).project(cam);
+      l.e.style.transform='translate('+((v3.x*.5+.5)*w)+'px,'+((-v3.y*.5+.5)*h)+'px) translate(-50%,-130%)';
+      l.e.style.opacity=v3.z<1?1:0;
+    });
+  }
+}
+frame();
+})();
+</script>
+</body>
+</html>
